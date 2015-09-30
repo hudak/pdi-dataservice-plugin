@@ -30,4 +30,25 @@
         <module>assembly</module>
     </modules>
 
+    <!-- this is for bootstrapping only; you should really just add this to your settings.xml -->
+    <repositories>
+    <repository>
+      <id>pentaho.resolve.repo</id>
+      <name>Pentaho Group Resolve Repository</name>
+      <url>http://nexus.pentaho.org/content/groups/omni/</url>
+      <releases>
+        <updatePolicy>always</updatePolicy>
+        <checksumPolicy>fail</checksumPolicy>
+      </releases>
+      <snapshots>
+        <updatePolicy>always</updatePolicy>
+        <checksumPolicy>fail</checksumPolicy>
+      </snapshots>
+    </repository>
+    <repository>
+      <id>repo.pentaho.org</id>
+      <name>repo.pentaho.org</name>
+      <url>http://repository.pentaho.org/artifactory/pentaho</url>
+    </repository>
+  </repositories>
 </project>
