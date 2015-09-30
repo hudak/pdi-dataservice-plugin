@@ -22,14 +22,11 @@
 
 package org.pentaho.di.trans.dataservice.jdbc;
 
-import org.pentaho.di.core.KettleClientEnvironment;
-
 import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.DriverPropertyInfo;
 import java.sql.SQLException;
-import java.sql.SQLFeatureNotSupportedException;
 import java.util.Properties;
 import java.util.logging.Logger;
 
@@ -37,36 +34,44 @@ public class ThinDriver implements Driver {
 
   public static final String BASE_URL = "jdbc:pdi://";
   public static final String SERVICE_NAME = "/kettle";
+  public static final String NAME = "PDI Data Services JDBC driver";
 
   static {
+    new ThinDriver().register();
+  }
+
+  private final Logger logger;
+
+  public ThinDriver() {
+    this.logger = Logger.getLogger( NAME );
+  }
+
+  private void register() {
     try {
-      KettleClientEnvironment.init();
-      DriverManager.registerDriver( new ThinDriver() );
-    } catch ( Exception e ) {
-      throw new RuntimeException( "Something went wrong registering the thin Kettle JDBC driver", e );
+      DriverManager.registerDriver( this );
+    } catch ( SQLException e ) {
+      logger.throwing( DriverManager.class.getName(), "registerDriver", e );
     }
   }
 
-  public ThinDriver() throws SQLException {
-  }
-
   @Override
-  public boolean acceptsURL( String url ) throws SQLException {
+  public boolean acceptsURL( String url ) {
     return url.startsWith( BASE_URL );
   }
 
   @Override
   public Connection connect( String url, Properties properties ) throws SQLException {
-    String username = properties.getProperty( "user" );
-    String password = properties.getProperty( "password" );
-
     if ( acceptsURL( url ) ) {
-      ThinConnection connection = new ThinConnection( url, username, password );
-      connection.testConnection();
-      return connection;
+      return createConnection( url, properties ).testConnection();
     } else {
       return null;
     }
+  }
+
+  protected ThinConnection createConnection( String url, Properties properties ) throws SQLException {
+    String username = properties.getProperty( "user" );
+    String password = properties.getProperty( "password" );
+    return new ThinConnection( url, username, password );
   }
 
   @Override
@@ -80,8 +85,8 @@ public class ThinDriver implements Driver {
   }
 
   @Override
-  public DriverPropertyInfo[] getPropertyInfo( String arg0, Properties arg1 ) throws SQLException {
-    return null;
+  public DriverPropertyInfo[] getPropertyInfo( String url, Properties info ) throws SQLException {
+    return new DriverPropertyInfo[0];
   }
 
   @Override
@@ -89,8 +94,8 @@ public class ThinDriver implements Driver {
     return false;
   }
 
-  public Logger getParentLogger() throws SQLFeatureNotSupportedException {
-    return null;
+  public Logger getParentLogger() {
+    return logger;
   }
 
 }

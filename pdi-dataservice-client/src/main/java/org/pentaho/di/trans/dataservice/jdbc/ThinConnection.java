@@ -22,6 +22,10 @@
 
 package org.pentaho.di.trans.dataservice.jdbc;
 
+import org.pentaho.di.cluster.HttpUtil;
+import org.pentaho.di.core.variables.Variables;
+import org.pentaho.di.trans.dataservice.client.DataServiceClientService;
+
 import java.sql.Array;
 import java.sql.Blob;
 import java.sql.CallableStatement;
@@ -41,9 +45,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Executor;
-import org.pentaho.di.cluster.HttpUtil;
-import org.pentaho.di.core.variables.Variables;
-import org.pentaho.di.trans.dataservice.client.DataServiceClientService;
 
 public class ThinConnection implements Connection {
 
@@ -79,13 +80,13 @@ public class ThinConnection implements Connection {
   private String service;
 
   public ThinConnection( String url, String username, String password ) throws SQLException {
-    this.url = url;
     this.username = username;
     this.password = password;
     parseUrl( url );
   }
 
   private void parseUrl( String url ) throws SQLException {
+    this.url = url;
     try {
       int portColonIndex = url.indexOf( ':', ThinDriver.BASE_URL.length() );
       int kettleIndex = url.indexOf( ThinDriver.SERVICE_NAME, portColonIndex );
@@ -120,7 +121,7 @@ public class ThinConnection implements Connection {
     }
   }
 
-  public void testConnection() throws SQLException {
+  public ThinConnection testConnection() throws SQLException {
     try {
       if ( !isLocal() ) {
         testRemoteConnection();
@@ -128,6 +129,7 @@ public class ThinConnection implements Connection {
     } catch ( Exception e ) {
       throw new SQLException( e.getMessage().trim() );
     }
+    return this;
   }
 
   private void testRemoteConnection() throws Exception {

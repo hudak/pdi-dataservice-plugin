@@ -22,6 +22,22 @@
 
 package org.pentaho.di.trans.dataservice.jdbc;
 
+import org.apache.commons.httpclient.Header;
+import org.apache.commons.httpclient.methods.PostMethod;
+import org.pentaho.di.cluster.HttpUtil;
+import org.pentaho.di.core.Const;
+import org.pentaho.di.core.Result;
+import org.pentaho.di.core.exception.KettleEOFException;
+import org.pentaho.di.core.exception.KettleException;
+import org.pentaho.di.core.jdbc.ThinUtil;
+import org.pentaho.di.core.row.RowMeta;
+import org.pentaho.di.core.row.RowMetaInterface;
+import org.pentaho.di.core.variables.Variables;
+import org.pentaho.di.core.xml.XMLHandler;
+import org.pentaho.di.www.WebResult;
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
+
 import java.io.DataInputStream;
 import java.io.InputStream;
 import java.io.Reader;
@@ -49,23 +65,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import org.apache.commons.httpclient.Header;
-import org.apache.commons.httpclient.methods.PostMethod;
-import org.pentaho.di.cluster.HttpUtil;
-import org.pentaho.di.core.Const;
-import org.pentaho.di.core.Result;
-import org.pentaho.di.core.exception.KettleEOFException;
-import org.pentaho.di.core.exception.KettleException;
-import org.pentaho.di.core.jdbc.ThinUtil;
-import org.pentaho.di.core.logging.LogChannel;
-import org.pentaho.di.core.row.RowMeta;
-import org.pentaho.di.core.row.RowMetaInterface;
-import org.pentaho.di.core.variables.Variables;
-import org.pentaho.di.core.xml.XMLHandler;
-import org.pentaho.di.www.WebResult;
-import org.w3c.dom.Document;
-import org.w3c.dom.Node;
+import java.util.logging.Logger;
 
 public class ThinResultSet implements ResultSet {
 
@@ -244,7 +244,7 @@ public class ThinResultSet implements ResultSet {
       // All OK, only log the remote logging text if requested.
       //
       if ( connection.isDebuggingRemoteLog() ) {
-        LogChannel.GENERAL.logBasic( log );
+        Logger.getLogger( ThinDriver.NAME ).info( log );
       }
 
     } catch ( Exception e ) {

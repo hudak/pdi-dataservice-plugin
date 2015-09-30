@@ -332,7 +332,7 @@ public class ThinDatabaseMetaData implements DatabaseMetaData {
 
   @Override
   public String getDriverName() throws SQLException {
-    return "PDI Data Services JDBC driver";
+    return ThinDriver.NAME;
   }
 
   @Override
