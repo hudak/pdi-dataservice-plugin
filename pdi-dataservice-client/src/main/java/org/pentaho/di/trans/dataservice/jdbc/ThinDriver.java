@@ -69,9 +69,7 @@ public class ThinDriver implements Driver {
   }
 
   protected ThinConnection createConnection( String url, Properties properties ) throws SQLException {
-    String username = properties.getProperty( "user" );
-    String password = properties.getProperty( "password" );
-    return new ThinConnection( url, username, password );
+    return new ThinConnection.Builder().parseUrl( url ).readProperties( properties ).build();
   }
 
   @Override

@@ -24,7 +24,6 @@ package org.pentaho.di.trans.dataservice.jdbc;
 
 import org.apache.commons.httpclient.Header;
 import org.apache.commons.httpclient.methods.PostMethod;
-import org.pentaho.di.cluster.HttpUtil;
 import org.pentaho.di.core.Const;
 import org.pentaho.di.core.Result;
 import org.pentaho.di.core.exception.KettleEOFException;
@@ -32,7 +31,6 @@ import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.jdbc.ThinUtil;
 import org.pentaho.di.core.row.RowMeta;
 import org.pentaho.di.core.row.RowMetaInterface;
-import org.pentaho.di.core.variables.Variables;
 import org.pentaho.di.core.xml.XMLHandler;
 import org.pentaho.di.www.WebResult;
 import org.w3c.dom.Document;
@@ -141,12 +139,7 @@ public class ThinResultSet implements ResultSet {
     Map<String, Object> parameters = new HashMap<String, Object>();
     parameters.put( "http.socket.timeout", 0 );
 
-    method =
-        HttpUtil
-            .execService( new Variables(), connection.getHostname(), connection.getPort(), connection.getWebAppName(),
-                urlString, connection.getUsername(), connection.getPassword(), connection.getProxyHostname(),
-                connection.getProxyPort(), connection.getNonProxyHosts(), headers, parameters,
-                connection.getArguments() );
+    method = connection.execPost( urlString, headers, parameters );
 
     return new DataInputStream( method.getResponseBodyAsStream() );
   }
@@ -159,14 +152,10 @@ public class ThinResultSet implements ResultSet {
     if ( !stopped.get() ) {
       stopped.set( true );
       try {
-        String reply =
-            HttpUtil.execService(
-                new Variables(), connection.getHostname(), connection.getPort(), connection.getWebAppName(),
-                connection.getService()
-                    + "/stopTrans" + "/?name=" + URLEncoder.encode( serviceTransName, "UTF-8" ) + "&id="
-                    + Const.NVL( serviceObjectId, "" ) + "&xml=Y", connection.getUsername(), connection
-                    .getPassword(), connection.getProxyHostname(), connection.getProxyPort(), connection
-                    .getNonProxyHosts() );
+        final String serviceAndArguments = ThinDriver.SERVICE_NAME
+          + "/stopTrans" + "/?name=" + URLEncoder.encode( serviceTransName, "UTF-8" ) + "&id="
+          + Const.NVL( serviceObjectId, "" ) + "&xml=Y";
+        String reply = connection.execService( serviceAndArguments );
 
         WebResult webResult = new WebResult( XMLHandler.loadXMLString( reply, WebResult.XML_TAG ) );
         if ( !"OK".equals( webResult.getResult() ) ) {
@@ -208,23 +197,19 @@ public class ThinResultSet implements ResultSet {
 
   private void checkTransStatus( String transformationName, String transformationObjectId ) throws SQLException {
     try {
-      String xml =
-          HttpUtil.execService( new Variables(), connection.getHostname(), connection.getPort(), connection
-              .getWebAppName(), connection.getService()
-              + "/transStatus/?name=" + URLEncoder.encode( transformationName, "UTF-8" ) + "&id="
-              + Const.NVL( transformationObjectId, "" ) + "&xml=Y", connection.getUsername(), connection
-              .getPassword(), connection.getProxyHostname(), connection.getProxyPort(), connection
-              .getNonProxyHosts() );
+      final String serviceAndArguments = ThinDriver.SERVICE_NAME
+        + "/transStatus/?name=" + URLEncoder.encode( transformationName, "UTF-8" ) + "&id="
+        + Const.NVL( transformationObjectId, "" ) + "&xml=Y";
+      String xml = connection.execService( serviceAndArguments );
       Document doc = XMLHandler.loadXMLString( xml );
       Node resultNode = XMLHandler.getSubNode( doc, "transstatus", "result" );
       Result result = new Result( resultNode );
-      String loggingString64 =
-          XMLHandler.getNodeValue( XMLHandler.getSubNode( doc, "transstatus", "logging_string" ) );
+      String loggingString64 = XMLHandler.getNodeValue( XMLHandler.getSubNode( doc, "transstatus", "logging_string" ) );
       String log = "";
       if ( !Const.isEmpty( loggingString64 ) ) {
         String dataString64 =
             loggingString64.substring( "<![CDATA[".length(), loggingString64.length() - "]]>".length() );
-        log = HttpUtil.decodeBase64ZippedString( dataString64 );
+        log = ThinConnection.decodeBase64ZippedString( dataString64 );
       }
 
       // Check for errors

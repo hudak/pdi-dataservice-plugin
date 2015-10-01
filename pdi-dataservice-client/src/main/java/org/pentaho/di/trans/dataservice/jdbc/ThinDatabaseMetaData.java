@@ -22,15 +22,15 @@
 
 package org.pentaho.di.trans.dataservice.jdbc;
 
-import org.pentaho.di.cluster.HttpUtil;
+import com.google.common.base.Throwables;
 import org.pentaho.di.core.Const;
+import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.jdbc.ThinUtil;
 import org.pentaho.di.core.row.RowDataUtil;
 import org.pentaho.di.core.row.RowMeta;
 import org.pentaho.di.core.row.RowMetaInterface;
 import org.pentaho.di.core.row.ValueMeta;
 import org.pentaho.di.core.row.ValueMetaInterface;
-import org.pentaho.di.core.variables.Variables;
 import org.pentaho.di.core.xml.XMLHandler;
 import org.pentaho.di.version.BuildVersion;
 import org.w3c.dom.Document;
@@ -54,7 +54,7 @@ public class ThinDatabaseMetaData implements DatabaseMetaData {
 
   public ThinDatabaseMetaData( ThinConnection connection ) {
     this.connection = connection;
-    serviceUrl = connection.getService() + "/listServices/";
+    serviceUrl = ThinDriver.SERVICE_NAME + "/listServices/";
   }
 
   @Override
@@ -587,41 +587,29 @@ public class ThinDatabaseMetaData implements DatabaseMetaData {
   }
 
   public List<ThinServiceInformation> getServiceInformation() throws SQLException {
-
-    List<ThinServiceInformation> services = null;
-
-    if ( connection.isLocal() ) {
-      services = connection.getLocalClient().getServiceInformation();
-    } else {
-      try {
-        services = getRemoteServiceInformation();
-      } catch ( Exception e ) {
-        throw new SQLException( "Unable to get service information from server", e );
-      }
-    }
-
-    return services;
+    return connection.isLocal() ? connection.getLocalClient().getServiceInformation() : getRemoteServiceInformation();
   }
 
-  private List<ThinServiceInformation> getRemoteServiceInformation() throws Exception {
-
-    String xml =
-      HttpUtil.execService( new Variables(), connection.getHostname(), connection.getPort(), connection
-        .getWebAppName(), serviceUrl, connection.getUsername(), connection.getPassword(), connection
-        .getProxyHostname(), connection.getProxyPort(), connection.getNonProxyHosts() );
+  private List<ThinServiceInformation> getRemoteServiceInformation() throws SQLException {
+    String xml = connection.execService( serviceUrl );
 
     List<ThinServiceInformation> services = new ArrayList<ThinServiceInformation>();
 
-    Document doc = XMLHandler.loadXMLString( xml );
-    Node servicesNode = XMLHandler.getSubNode( doc, "services" );
-    List<Node> serviceNodes = XMLHandler.getNodes( servicesNode, "service" );
-    for ( Node serviceNode : serviceNodes ) {
+    try {
+      Document doc = XMLHandler.loadXMLString( xml );
+      Node servicesNode = XMLHandler.getSubNode( doc, "services" );
+      List<Node> serviceNodes = XMLHandler.getNodes( servicesNode, "service" );
+      for ( Node serviceNode : serviceNodes ) {
 
-      String name = XMLHandler.getTagValue( serviceNode, "name" );
-      Node rowMetaNode = XMLHandler.getSubNode( serviceNode, RowMeta.XML_META_TAG );
-      RowMetaInterface serviceFields = new RowMeta( rowMetaNode );
-      ThinServiceInformation service = new ThinServiceInformation( name, serviceFields );
-      services.add( service );
+        String name = XMLHandler.getTagValue( serviceNode, "name" );
+        Node rowMetaNode = XMLHandler.getSubNode( serviceNode, RowMeta.XML_META_TAG );
+        RowMetaInterface serviceFields = new RowMeta( rowMetaNode );
+        ThinServiceInformation service = new ThinServiceInformation( name, serviceFields );
+        services.add( service );
+      }
+    } catch ( KettleException e ) {
+      Throwables.propagateIfPossible( e, SQLException.class );
+      throw new SQLException( "Error parsing remote service information", e );
     }
 
     return services;

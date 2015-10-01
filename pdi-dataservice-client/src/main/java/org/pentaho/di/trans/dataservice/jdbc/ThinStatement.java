@@ -29,9 +29,6 @@ import java.sql.SQLFeatureNotSupportedException;
 import java.sql.SQLWarning;
 import java.sql.Statement;
 
-import org.pentaho.di.cluster.HttpUtil;
-import org.pentaho.di.core.variables.Variables;
-
 public class ThinStatement implements Statement {
 
   protected ThinConnection connection;
@@ -114,9 +111,7 @@ public class ThinStatement implements Statement {
   @Override
   public ResultSet executeQuery( String sql ) throws SQLException {
     try {
-      String url =
-        HttpUtil.constructUrl( new Variables(), connection.getHostname(), connection.getPort(), connection
-          .getWebAppName(), connection.getService() + "/sql/", connection.isSecure() );
+      String url = connection.constructUrl( ThinDriver.SERVICE_NAME + "/sql/" );
       resultSet = new ThinResultSet( this, url, sql );
       return resultSet;
     } catch ( Exception e ) {
