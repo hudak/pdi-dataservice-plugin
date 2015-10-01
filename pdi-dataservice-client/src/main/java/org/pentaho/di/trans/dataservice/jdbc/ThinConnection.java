@@ -29,6 +29,9 @@ import org.pentaho.di.cluster.HttpUtil;
 import org.pentaho.di.core.variables.Variables;
 import org.pentaho.di.trans.dataservice.client.DataServiceClientService;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
 import java.sql.Array;
 import java.sql.Blob;
@@ -82,6 +85,7 @@ public class ThinConnection implements Connection {
   private boolean debuggingRemoteLog;
 
   private boolean isLocal = false;
+  private DocumentBuilderFactory docBuilderFactory;
 
   private ThinConnection() {
   }
@@ -119,6 +123,13 @@ public class ThinConnection implements Connection {
     } catch ( Exception e ) {
       throw serverException( e );
     }
+  }
+
+  protected DocumentBuilder createDocumentBuilder() throws ParserConfigurationException {
+    if ( docBuilderFactory == null ) {
+      docBuilderFactory = DocumentBuilderFactory.newInstance();
+    }
+    return docBuilderFactory.newDocumentBuilder();
   }
 
   private static SQLException serverException( Exception e ) throws SQLException {

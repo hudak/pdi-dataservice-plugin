@@ -36,14 +36,13 @@ public class ThinDriver implements Driver {
   public static final String SERVICE_NAME = "/kettle";
   public static final String NAME = "PDI Data Services JDBC driver";
 
+  protected static Logger logger = Logger.getLogger( NAME );
+
   static {
     new ThinDriver().register();
   }
 
-  private final Logger logger;
-
   public ThinDriver() {
-    this.logger = Logger.getLogger( NAME );
   }
 
   private void register() {
