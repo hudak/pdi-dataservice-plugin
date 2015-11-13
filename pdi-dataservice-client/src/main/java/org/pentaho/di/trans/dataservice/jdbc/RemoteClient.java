@@ -29,6 +29,7 @@ import com.google.common.collect.Lists;
 import org.apache.commons.httpclient.Header;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpMethod;
+import org.apache.commons.httpclient.URI;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.pentaho.di.core.row.RowMeta;
@@ -139,6 +140,13 @@ class RemoteClient implements DataServiceClientService {
     try {
       int result = client.executeMethod( method );
 
+      // Follow redirects
+      if ( result == 302 ) {
+        URI location = new URI( method.getResponseHeader( "Location" ).getValue(), false );
+        method.setURI( location );
+        return execMethod( method );
+      }
+
       if ( result == 500 ) {
         throw new SQLException( "There was an error reading data from the server." );
       }
@@ -152,8 +160,8 @@ class RemoteClient implements DataServiceClientService {
         throw new SQLException( method.getResponseBodyAsString() );
       }
     } catch ( IOException e ) {
-      throw new SQLException(
-        "You don't seem to be getting a connection to the server. Check the host and port you're using and make sure the sever is up and running." );
+      throw new SQLException( "You don't seem to be getting a connection to the server. "
+        + "Check the host and port you're using and make sure the sever is up and running.", e );
     }
     return method;
   }
